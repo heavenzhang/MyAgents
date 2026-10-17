@@ -1,0 +1,5 @@
+ios/Frameworks/
+android/src/main/jniLibs/
+android/.cxx/
+android/build/
+android/native/

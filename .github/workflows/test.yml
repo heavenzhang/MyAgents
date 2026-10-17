@@ -15,6 +15,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  mobile-portable:
+    name: mobile SDK · app policy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/app/package-lock.json
+      - run: npm ci --prefix mobile/app
+      - run: npm --prefix mobile/app run typecheck
+      - run: npm --prefix mobile/app run lint
+      - run: npm --prefix mobile/app run test:policy
+      - uses: dtolnay/rust-toolchain@1.92.0
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            mobile/crypto
+            mobile/core
+            mobile/connection
+            mobile/asset-store
+            src-tauri/host-management-protocol
+      - name: Validate portable controller, journal, wire and byte owners
+        run: |
+          # The imported desktop store harness launches a hardcoded root-module
+          # subprocess test name; it runs in its original crate, not this module adapter.
+          cargo test --manifest-path mobile/crypto/Cargo.toml --locked --features native-store native_store_tests
+          cargo clippy --manifest-path mobile/crypto/Cargo.toml --locked --features native-store --all-targets -- -D warnings
+          cargo test --manifest-path mobile/core/Cargo.toml --locked
+          cargo clippy --manifest-path mobile/core/Cargo.toml --locked --all-targets -- -D warnings
+          cargo test --manifest-path mobile/connection/Cargo.toml --locked
+          cargo clippy --manifest-path mobile/connection/Cargo.toml --locked --all-targets -- -D clippy::disallowed_methods -D clippy::disallowed_macros
+          cargo test --manifest-path mobile/asset-store/Cargo.toml --locked
+          cargo clippy --manifest-path mobile/asset-store/Cargo.toml --locked --all-targets -- -D warnings
+          cargo test --manifest-path src-tauri/host-management-protocol/Cargo.toml --locked
+
   headless-network:
     name: headless AgentNet connector · no desktop
     runs-on: ubuntu-24.04

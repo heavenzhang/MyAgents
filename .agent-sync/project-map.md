@@ -80,3 +80,7 @@ User chose https://140.143.183.232/ directly. Preserve the current static design
 ## MOXBOTS-OUTPUT-003 — 展开与时间口径修正
 
 沿原BlockGroup/ProcessRow/ToolUse投影，单条一次直达正文；`processTiming.ts`区分runtime报告duration与观测span/等待，不改transcript owner或存储格式。源码/回归及实际展开证据 `dev-docs/output-expanded/acceptance.md`，独立审阅见同目录review.md；原生统一发行另验。
+
+## MOXBOTS-MOBILE-002 — 内部移动客户端（整合中）
+
+`mobile/app/` 是 React Native/Expo 原生客户端及明确标记的网页 QA 夹具；`mobile/core/` 与 `mobile/connection/` 复用原账号、设备与加密通道，`mobile/crypto/` 通过模块引用原共享 crypto 源码，仅补原生安全存储适配。冻结桌面凭据读取器源码/制品哈希不得为手机端修改。`mobile/asset-store/` 为私有有界字节所有者，沿现有 Host SessionEngine/会话与回执管理；不新建执行器。任务范围/证据/独立验收门见 `dev-docs/mobile-002/plan.md`；Android 构建/制品验签见同目录 `android-build.md`。当前为整合分支，未完成真实账号/Host、物理语音、iOS、推送、正式内部签名分发及主干交付，不因 APK/夹具通过视为上线。

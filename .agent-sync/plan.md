@@ -355,3 +355,8 @@ User authorized owned relay terminal recovery first, then DSH child approval gui
 ## MOXBOTS-SESSION-WINDOWS-001 — 2026-10-17
 
 按用户要求移除全局浏览器式TabBar，以当前会话页面/侧栏为导航；沿原Chat保存与后台继续owner做12页FIFO有界回收，保护输入/录音和活动页面。验收与发布请求见 `dev-docs/session-windows/acceptance.md`，分支任务 `.agent-sync/tasks/codex-session-windows-20261017-31ed5a11.md`。156项定向回归、实际renderer三尺寸与独立代码/截图审阅通过；CI/main以PR为准，原生包/真实会话仍待既定唯一发布owner下一未冻结候选，不操作日常App，不把main合并当已发布。
+
+
+## MOXBOTS-MOBILE-002 — 2026-10-18
+
+User approved RN/TS/Expo custom native builds plus a portable Rust controller SDK, existing AgentNet/Host/Session owners, first internal trial then store preparation. Full daily-use delivery and three real gates are tracked at `dev-docs/mobile-002/plan.md` and `.agent-sync/tasks/codex-mobile-002-20261018-75c72088.md`. No mock/local validation closes actual iOS/Android, push, Host execution or signing gates. Existing sole desktop updater deployment remains unchanged; new mobile/shared-service target deployments require scoped owner/target, backup and rollback. Current root owns mobile code/integration; no parallel production action.

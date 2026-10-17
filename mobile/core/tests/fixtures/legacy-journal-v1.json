@@ -1,0 +1,19 @@
+{
+  "operationId": "00000000-0000-4000-8000-000000000099",
+  "digest": "6nZ7Xh2I9yx7b7BKb7ciYrZxEF4DQYERP68RW3mPPtk",
+  "request": {
+    "kind": "start",
+    "agentId": "agent",
+    "operationId": "00000000-0000-4000-8000-000000000099",
+    "text": "旧版原文\nline two"
+  },
+  "target": {
+    "serviceId": "00000000-0000-0000-0000-000000000001",
+    "environment": "development",
+    "networkId": "00000000-0000-0000-0000-000000000002",
+    "principalId": "account",
+    "deviceId": "00000000-0000-0000-0000-000000000004",
+    "keyGeneration": 1
+  },
+  "issuer": "https://native-trust.invalid"
+}

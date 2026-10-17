@@ -15,7 +15,9 @@ import { getSessionEngine, stopActiveTurn, runProcessUpdateAdmission } from '../
 import { buildRemoteSnapshot, projectRemoteInteractions } from './projection';
 import { createRemoteReceiptOwner, RemoteSessionError } from './receipts';
 
-const receipts = createRemoteReceiptOwner('desktop');
+export const desktopRemoteReceipts = createRemoteReceiptOwner('desktop');
+const receipts = desktopRemoteReceipts;
+export { target as resolveDesktopRemoteTarget };
 const envelope = z.object({request:remoteSessionRequestSchema,generation:z.string().min(1).max(256),preparedSessionId:z.string().uuid().optional()}).strict();
 const jobs = new Set<Promise<void>>();
 function failure(error:unknown): {success:false;code:string} {

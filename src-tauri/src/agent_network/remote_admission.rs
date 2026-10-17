@@ -9,6 +9,18 @@ pub(crate) enum AdmissionState {
     Exited,
     Expired,
 }
+/// Only a correlated operation receipt settles admission. An unrelated active
+/// turn or session snapshot cannot establish that a queued send was accepted.
+pub(crate) fn exact_receipt_state(
+    status: &myagents_host_management_protocol::RemoteReceiptStatus,
+) -> AdmissionState {
+    use myagents_host_management_protocol::RemoteReceiptStatus;
+    match status {
+        RemoteReceiptStatus::Accepted => AdmissionState::Accepted,
+        RemoteReceiptStatus::Rejected => AdmissionState::Rejected,
+        _ => AdmissionState::Pending,
+    }
+}
 pub(crate) async fn retain_owner<O, F, Fut>(
     owner: O,
     maximum: Duration,
@@ -46,6 +58,21 @@ mod tests {
         fn drop(&mut self) {
             self.0.fetch_sub(1, Ordering::SeqCst);
         }
+    }
+    #[test]
+    fn uncertain_receipts_cannot_be_settled_by_another_sessions_running_turn() {
+        use myagents_host_management_protocol::RemoteReceiptStatus as Status;
+        for status in [Status::Processing, Status::Unconfirmed, Status::NotFound] {
+            assert_eq!(exact_receipt_state(&status), AdmissionState::Pending);
+        }
+        assert_eq!(
+            exact_receipt_state(&Status::Accepted),
+            AdmissionState::Accepted
+        );
+        assert_eq!(
+            exact_receipt_state(&Status::Rejected),
+            AdmissionState::Rejected
+        );
     }
     #[tokio::test]
     async fn configuration_wait_outlasts_background_idle_poll_without_losing_owner() {

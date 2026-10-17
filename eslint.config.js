@@ -166,11 +166,16 @@ export default defineConfig(
   includeIgnoreFile(gitignorePath),
   {
     // Additional ignore patterns for build output and bundled resources
-    ignores: ['**/out/**', '**/dist/**', '**/.vite/**', '**/coverage/**', '**/.eslintcache', 'bundled-skills/**', '**/sdk-shim/**']
+    ignores: ['**/out/**', '**/dist/**', '**/.vite/**', '**/coverage/**', '**/.eslintcache', 'bundled-skills/**', '**/sdk-shim/**', 'mobile/app/**/android/build/**']
   },
   js.configs.recommended,
   ...ts.configs.recommended,
   prettier,
+  {
+    // Expo loads these build/config entry points through CommonJS.
+    files: ['mobile/app/eslint.config.cjs', 'mobile/app/modules/moxbots-remote/app.plugin.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
   {
     plugins: {
       'eslint-comments': eslintComments,

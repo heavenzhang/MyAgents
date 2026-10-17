@@ -1,0 +1,35 @@
+/** Real Desktop metadata/ledger authority, with no turn/provider invocation. */
+import {randomUUID} from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {mkdtemp,mkdir,readFile,rm,writeFile,symlink} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+import {build} from 'esbuild';
+import {afterEach,expect,it} from 'vitest';
+let directory:string|undefined;
+afterEach(async()=>{if(directory)await rm(directory,{recursive:true,force:true});directory=undefined});
+it('uses one real Desktop ledger and persists frozen mobile birth without invoking an executor',async()=>{
+ directory=await mkdtemp(join(tmpdir(),'mobile-owner-real-'));const state=join(directory,'.moxbot-updaterqa'),workspace=join(directory,'work');await mkdir(state,{mode:0o700});await mkdir(workspace,{mode:0o700});
+ const agent={id:'mobile-agent',name:'Mobile Agent',enabled:true,projectId:'mobile-project',workspacePath:workspace,agentDir:workspace,runtime:'builtin',permissionMode:'plan',model:'frozen-model'};
+ await writeFile(join(state,'config.json'),JSON.stringify({agents:[agent],providers:[],mcpServers:[],defaultIntegratedRuntime:'claude-agent-sdk'}));
+ await writeFile(join(state,'projects.json'),JSON.stringify([{id:'mobile-project',name:'Project',path:workspace,agentId:agent.id}]));
+ const operationId=randomUUID(),source=join(directory,'entry.ts'),entry=join(directory,'entry.mjs'),resultPath=join(directory,'result.json');
+ await writeFile(source,`import {writeFile} from 'node:fs/promises';
+import {prepareDesktopRemoteMobileSession,handleDesktopRemoteMobileSession} from ${JSON.stringify(resolve('src/server/remote-session/mobile.ts'))};
+import {prepareDesktopRemoteSession} from ${JSON.stringify(resolve('src/server/remote-session/desktop.ts'))};
+const request={kind:'mobile.start',version:1,agentId:'mobile-agent',operationId:${JSON.stringify(operationId)},text:'中'.repeat(9000),assetIds:[]};
+const first=await prepareDesktopRemoteMobileSession({request});const duplicate=await prepareDesktopRemoteMobileSession({request});
+const receipt=await handleDesktopRemoteMobileSession({request:{kind:'mobile.receipt',version:1,agentId:request.agentId,operationId:request.operationId},generation:'gen'},'global');
+const legacy=await prepareDesktopRemoteSession({request:{kind:'start',agentId:request.agentId,operationId:request.operationId,text:'legacy'}});
+await writeFile(${JSON.stringify(resultPath)},JSON.stringify({first,duplicate,receipt,legacy}));`);
+ await symlink(resolve('node_modules'),join(directory,'node_modules'));
+ await build({entryPoints:[source],outfile:entry,bundle:true,platform:'node',target:'node24',format:'esm',logLevel:'silent',define:{__MYAGENTS_BUILD_PROFILE__:'"moxbot-updaterqa"',__MYAGENTS_UPDATER_QA__:'true'},external:['@playwright/mcp','@playwright/mcp/*','playwright','playwright/*','playwright-core','playwright-core/*','fsevents','chromium-bidi/*'],banner:{js:'import {createRequire as __mobileRequire} from "node:module";const require=__mobileRequire(import.meta.url);'}});
+ const env={...process.env,HOME:directory,USERPROFILE:directory,MYAGENTS_SIDECAR_GENERATION:'gen'};for(const key of Object.keys(env))if(/API_KEY|AUTH_TOKEN|ACCESS_TOKEN/.test(key))delete env[key as keyof typeof env];
+ await promisify(execFile)(process.execPath,[entry],{env,timeout:30_000,maxBuffer:16384});
+ const result=JSON.parse(await readFile(resultPath,'utf8'));expect(result.first).toMatchObject({success:true,data:{agentId:agent.id}});const sessionId=result.first.data.sessionId;
+ expect(result.duplicate).toMatchObject({data:{receipt:{kind:'mobile.receipt',version:1,status:'processing',sessionId}}});
+ expect(result.receipt).toMatchObject({data:{kind:'mobile.receipt',version:1,status:'processing',sessionId}});
+ expect(result.legacy).toMatchObject({success:false,code:'REMOTE_OPERATION_CONFLICT'});
+ const sessions=JSON.parse(await readFile(join(state,'sessions.json'),'utf8'));expect(sessions).toHaveLength(1);expect(sessions[0]).toMatchObject({id:sessionId,materializationState:'prepared',materializationSourceSessionId:operationId,permissionMode:'plan',model:'frozen-model',configSnapshotAt:expect.any(String)});
+},60_000);

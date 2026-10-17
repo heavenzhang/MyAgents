@@ -1,0 +1,39 @@
+[package]
+name = "mox-mobile-connection"
+version = "0.5.2"
+edition = "2021"
+rust-version = "1.92"
+license = "AGPL-3.0-only"
+[dependencies]
+moxbots-mobile-core = { path = "../core" }
+myagents-agent-network-crypto = { package = "moxbots-mobile-crypto", path = "../crypto", features = ["native-store"] }
+myagents-agent-network-protocol = { path = "../../src-tauri/agent-network-protocol" }
+myagents-host-management-protocol = { path = "../../src-tauri/host-management-protocol" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.13.1", default-features = false, features = ["json", "stream", "blocking", "rustls", "http2", "system-proxy"] }
+tokio = { version = "1.49", features = ["rt-multi-thread", "macros", "time", "sync", "signal", "net", "io-util"] }
+tokio-tungstenite = { version = "0.24", default-features = false, features = ["handshake"] }
+futures-util = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+zeroize = "1"
+sha2 = "0.10"
+base64 = "0.22"
+url = "2"
+jsonwebtoken = { version = "=11.1.0", default-features = false, features = ["rust_crypto"] }
+libc = "0.2.180"
+rustls = { version = "=0.23.45", default-features = false, features = ["ring", "std"] }
+
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dev-dependencies]
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
+p256 = { version = "0.13", features = ["ecdsa", "pkcs8"] }
+rcgen = { version = "=0.14.10", default-features = false, features = ["ring", "pem"] }
+myagents-agent-network-crypto = { package = "moxbots-mobile-crypto", path = "../crypto", features = ["test-support"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+rustls-platform-verifier = "0.6.2"

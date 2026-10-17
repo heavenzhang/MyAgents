@@ -1,0 +1,3 @@
+-keep,includedescriptorclasses class org.rustls.platformverifier.** { *; }
+-keep class com.moxbots.mobile.remote.NativeConnection { *; }
+-keep class com.moxbots.mobile.remote.SecureRecords { *; }

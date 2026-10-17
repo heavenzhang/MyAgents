@@ -132,7 +132,9 @@
             "receipt.provider.get",
             "resources.directory.list",
             "resources.register",
-            "session.remote"
+            "session.remote",
+            "session.assets.v1",
+            "session.mobile.v1"
           ]
         },
         "params": {
@@ -169,6 +171,12 @@
             },
             {
               "$ref": "#/$defs/remoteSessionParams"
+            },
+            {
+              "$ref": "#/$defs/remoteAssetsParams"
+            },
+            {
+              "$ref": "#/$defs/remoteMobileParams"
             }
           ]
         }
@@ -381,6 +389,38 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "method": {
+                "const": "session.assets.v1"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/remoteAssetsParams"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "method": {
+                "const": "session.mobile.v1"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/remoteMobileParams"
+              }
+            }
+          }
         }
       ]
     },
@@ -534,6 +574,12 @@
             },
             {
               "$ref": "#/$defs/remoteSessionResponse"
+            },
+            {
+              "$ref": "#/$defs/remoteAssetsResponse"
+            },
+            {
+              "$ref": "#/$defs/remoteMobileResponse"
             }
           ]
         }
@@ -2610,6 +2656,1094 @@
         "kind",
         "data"
       ]
+    },
+    "ownedAgentId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "ownedSessionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 99,
+      "pattern": "^[A-Za-z0-9-]+$"
+    },
+    "ownedErrorCode": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Z0-9_]+$"
+    },
+    "assetLabel": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f/\\\\]+$",
+      "not": {
+        "enum": [
+          ".",
+          ".."
+        ]
+      }
+    },
+    "assetMime": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$"
+    },
+    "assetHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "assetSize": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20971520
+    },
+    "assetOffset": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20971520
+    },
+    "assetCursor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "$comment": "Rust and Zod additionally enforce the 256 UTF-8 byte cursor bound."
+    },
+    "assetBase64": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 32768,
+      "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/][AQgw]==|[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=)?$"
+    },
+    "remoteAssetRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "capabilities"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "uploadId",
+            "name",
+            "mimeType",
+            "sizeBytes",
+            "sha256"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "upload.begin"
+            },
+            "uploadId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "name": {
+              "$ref": "#/$defs/assetLabel"
+            },
+            "mimeType": {
+              "$ref": "#/$defs/assetMime"
+            },
+            "sizeBytes": {
+              "$ref": "#/$defs/assetSize"
+            },
+            "sha256": {
+              "$ref": "#/$defs/assetHash"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "uploadId",
+            "offset",
+            "dataBase64",
+            "sha256"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "upload.chunk"
+            },
+            "uploadId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20971519
+            },
+            "dataBase64": {
+              "$ref": "#/$defs/assetBase64",
+              "minLength": 4
+            },
+            "sha256": {
+              "$ref": "#/$defs/assetHash"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "uploadId"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "upload.status"
+            },
+            "uploadId": {
+              "$ref": "#/$defs/uuid"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "uploadId"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "upload.finish"
+            },
+            "uploadId": {
+              "$ref": "#/$defs/uuid"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "uploadId"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "upload.cancel"
+            },
+            "uploadId": {
+              "$ref": "#/$defs/uuid"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "sessionId",
+            "limit"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "list"
+            },
+            "sessionId": {
+              "$ref": "#/$defs/ownedSessionId"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30
+            },
+            "before": {
+              "$ref": "#/$defs/assetCursor"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "sessionId",
+            "artifactId",
+            "offset",
+            "maxBytes"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "read"
+            },
+            "sessionId": {
+              "$ref": "#/$defs/ownedSessionId"
+            },
+            "artifactId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "offset": {
+              "$ref": "#/$defs/assetOffset"
+            },
+            "maxBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 24576
+            }
+          }
+        }
+      ]
+    },
+    "remoteArtifactDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactId",
+        "name",
+        "mimeType",
+        "sizeBytes",
+        "sha256"
+      ],
+      "properties": {
+        "artifactId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "name": {
+          "$ref": "#/$defs/assetLabel"
+        },
+        "mimeType": {
+          "$ref": "#/$defs/assetMime"
+        },
+        "sizeBytes": {
+          "$ref": "#/$defs/assetSize"
+        },
+        "sha256": {
+          "$ref": "#/$defs/assetHash"
+        }
+      }
+    },
+    "remoteAssetResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "maxBytes",
+            "maxChunkBytes"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "capabilities"
+            },
+            "maxBytes": {
+              "const": 20971520
+            },
+            "maxChunkBytes": {
+              "const": 24576
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "uploadId",
+            "receivedBytes",
+            "totalBytes",
+            "state"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "upload"
+            },
+            "uploadId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "receivedBytes": {
+              "$ref": "#/$defs/assetOffset"
+            },
+            "totalBytes": {
+              "$ref": "#/$defs/assetSize"
+            },
+            "state": {
+              "enum": [
+                "uploading",
+                "ready",
+                "cancelled"
+              ]
+            }
+          },
+          "$comment": "Executable codecs additionally require receivedBytes <= totalBytes."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "uploadId",
+            "assetId",
+            "name",
+            "mimeType",
+            "sizeBytes",
+            "sha256"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "asset"
+            },
+            "uploadId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "assetId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "name": {
+              "$ref": "#/$defs/assetLabel"
+            },
+            "mimeType": {
+              "$ref": "#/$defs/assetMime"
+            },
+            "sizeBytes": {
+              "$ref": "#/$defs/assetSize"
+            },
+            "sha256": {
+              "$ref": "#/$defs/assetHash"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "sessionId",
+            "items",
+            "hasMore",
+            "nextBefore"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "list"
+            },
+            "sessionId": {
+              "$ref": "#/$defs/ownedSessionId"
+            },
+            "items": {
+              "type": "array",
+              "maxItems": 30,
+              "items": {
+                "$ref": "#/$defs/remoteArtifactDescriptor"
+              }
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "nextBefore": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/assetCursor"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "hasMore": {
+                    "const": true
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "nextBefore": {
+                    "$ref": "#/$defs/assetCursor"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "nextBefore": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "sessionId",
+            "artifactId",
+            "offset",
+            "dataBase64",
+            "sha256",
+            "eof"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "chunk"
+            },
+            "sessionId": {
+              "$ref": "#/$defs/ownedSessionId"
+            },
+            "artifactId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "offset": {
+              "$ref": "#/$defs/assetOffset"
+            },
+            "dataBase64": {
+              "$ref": "#/$defs/assetBase64"
+            },
+            "sha256": {
+              "$ref": "#/$defs/assetHash"
+            },
+            "eof": {
+              "type": "boolean"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "eof": {
+                    "const": false
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "dataBase64": {
+                    "$ref": "#/$defs/assetBase64",
+                    "minLength": 4
+                  }
+                }
+              }
+            }
+          ],
+          "$comment": "Executable codecs additionally require offset + decoded bytes <= maxBytes."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "kind",
+            "code"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "kind": {
+              "const": "error"
+            },
+            "code": {
+              "$ref": "#/$defs/ownedErrorCode"
+            }
+          }
+        }
+      ]
+    },
+    "mobileLabel": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f]+$"
+    },
+    "remoteMobileRequest": {
+      "$comment": "Rust/Zod executable codecs additionally enforce <=49152 canonical serialized UTF-8 bytes, UTF-16 string lengths and Unicode control-character rejection. JSON Schema specifies the closed structural projection.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.capabilities"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.models"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "sessionId",
+            "revision"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.suggestions"
+            },
+            "sessionId": {
+              "$ref": "#/$defs/ownedSessionId"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 128
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "operationId",
+            "text",
+            "assetIds"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.start"
+            },
+            "operationId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 16000
+            },
+            "assetIds": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "$ref": "#/$defs/uuid"
+              },
+              "uniqueItems": true
+            },
+            "modelId": {
+              "$ref": "#/$defs/mobileLabel"
+            }
+          },
+          "anyOf": [
+            {
+              "properties": {
+                "text": {
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "properties": {
+                "assetIds": {
+                  "minItems": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "operationId",
+            "text",
+            "assetIds",
+            "sessionId"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.send"
+            },
+            "operationId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 16000
+            },
+            "assetIds": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "$ref": "#/$defs/uuid"
+              },
+              "uniqueItems": true
+            },
+            "modelId": {
+              "$ref": "#/$defs/mobileLabel"
+            },
+            "sessionId": {
+              "$ref": "#/$defs/ownedSessionId"
+            }
+          },
+          "anyOf": [
+            {
+              "properties": {
+                "text": {
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "properties": {
+                "assetIds": {
+                  "minItems": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "operationId"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.receipt"
+            },
+            "operationId": {
+              "$ref": "#/$defs/uuid"
+            }
+          }
+        }
+      ]
+    },
+    "remoteMobileResult": {
+      "$comment": "Rust/Zod executable codecs additionally enforce <=49152 canonical serialized UTF-8 bytes, UTF-16 string lengths, Unicode control rejection and unique model IDs.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "attachments",
+            "modelSelection",
+            "nextSuggestions",
+            "maxAssets"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.capabilities"
+            },
+            "attachments": {
+              "const": true
+            },
+            "modelSelection": {
+              "const": true
+            },
+            "nextSuggestions": {
+              "const": true
+            },
+            "maxAssets": {
+              "const": 8
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "items"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.models"
+            },
+            "items": {
+              "type": "array",
+              "maxItems": 30,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "label"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/mobileLabel"
+                  },
+                  "label": {
+                    "$ref": "#/$defs/mobileLabel"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "sessionId",
+            "revision",
+            "suggestions"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.suggestions"
+            },
+            "sessionId": {
+              "$ref": "#/$defs/ownedSessionId"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 128
+            },
+            "suggestions": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "agentId",
+            "kind",
+            "operationId",
+            "sessionId",
+            "status",
+            "code"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "agentId": {
+              "$ref": "#/$defs/ownedAgentId"
+            },
+            "kind": {
+              "const": "mobile.receipt"
+            },
+            "operationId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "sessionId": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ownedSessionId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "status": {
+              "enum": [
+                "processing",
+                "accepted",
+                "rejected",
+                "unconfirmed",
+                "not-found"
+              ]
+            },
+            "code": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ownedErrorCode"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "kind",
+            "code"
+          ],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "kind": {
+              "const": "mobile.error"
+            },
+            "code": {
+              "$ref": "#/$defs/ownedErrorCode"
+            }
+          }
+        }
+      ]
+    },
+    "remoteAssetsParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "remoteAssets"
+      ],
+      "properties": {
+        "remoteAssets": {
+          "$ref": "#/$defs/remoteAssetRequest"
+        }
+      }
+    },
+    "remoteAssetsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "data"
+      ],
+      "properties": {
+        "kind": {
+          "const": "remote-assets"
+        },
+        "data": {
+          "$ref": "#/$defs/remoteAssetResult"
+        }
+      }
+    },
+    "remoteMobileParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "remoteMobile"
+      ],
+      "properties": {
+        "remoteMobile": {
+          "$ref": "#/$defs/remoteMobileRequest"
+        }
+      }
+    },
+    "remoteMobileResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "data"
+      ],
+      "properties": {
+        "kind": {
+          "const": "remote-mobile"
+        },
+        "data": {
+          "$ref": "#/$defs/remoteMobileResult"
+        }
+      }
     }
   }
 }
